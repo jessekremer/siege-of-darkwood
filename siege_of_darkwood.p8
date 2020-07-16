@@ -688,9 +688,11 @@ function control_battle()
 				d=plyr.potions[lp].desc
 				hpc=plyr.curr_hp+hpv
 				msg="potion heals derek for "..hpv
+				log=true
 				if(d=="potion of fiery breath") then
-					--attack(plyr,e[rnd(ceil(#e))])
-					msg="potion randomly hits "
+					r=ceil(rnd(#e))
+					spell(plyr,e[r],"potion")
+					log=false
 				elseif(hpv=="full") then
 					plyr.curr_hp=plyr.hp
 				elseif(hpc <= plyr.hp) then
@@ -701,7 +703,7 @@ function control_battle()
 					msg="potion has no effect"
 				end
 				del(plyr.potions,plyr.potions[lp])
-				add_log(msg)
+				if(log) add_log(msg)
 				for i=1,#e do
 					attack(e[i],plyr)
 				end
@@ -1188,6 +1190,23 @@ function attack(atk,def)
 		add_log(atk.type.." missed "..def.type)
 	end
 --	return log
+	return d
+end
+
+function spell(atk,def,style)
+	if (hit(def.ac,atk.str,0)) then
+		d=dmg(atk.d,0)
+		if (def.curr_hp-d >= 0) then
+			def.curr_hp-=d
+		else
+			def.curr_hp=0
+		end
+		add_log(style.." hit "..def.type.." for "..tostr(d).." dmg")
+	else
+		add_log(style.." missed "..def.type)
+	end
+--	return log
+	return d
 end
 
 function battle_run()
