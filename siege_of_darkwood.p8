@@ -83,12 +83,13 @@ function _init()
 		}
 
 	magic={
-		{desc="protection+1",gold=1000,val="1",stat="ring"},
-		{desc="protection+2",gold=2000,val="1",stat="ring"},
-		{desc="fire",gold=1000,val="1",stat="wand"},
-		{desc="lightning",gold=3000,val="1",stat="wand"},
-		{desc="destruction",gold=4000,val="1",stat="wand"},
-		{desc="healing",gold=1200,val="1",stat="staff"}
+		{desc="protection+1",gold=1,val="1",stat="ring"},
+		{desc="protection+2",gold=2,val="1",stat="ring"},
+		{desc="fire",gold=1,val="1",stat="wand"},
+		{desc="lightning",gold=3,val="1",stat="wand"},
+		{desc="destruction",gold=4,val="1",stat="wand"},
+		{desc="healing",gold=1200,val="1",stat="staff"}--,
+		--{desc="dog",gold=777,val="5",stat="cha"}
 		}
 
 	games={
@@ -449,19 +450,20 @@ end
 
 function textbox(text,s)
 	pad=20
-	rectfill(21,21,108,71,1)
-	rectfill(20,20,107,70,7)
+	chars=20
+	lines=ceil(#text/chars)
+	xtra=(lines-5)*7
+	rectfill(21,21,108,71+xtra,1)
+	rectfill(20,20,107,70+xtra,7)
 	--rect(1+pad,1+pad,126-pad,89-pad,0)
 	rectfill(25,25,33,34,0)
 	spr(s,26,26)
-	chars=20
-	lines=ceil(#text/chars)
 	for t=1,lines do
 		print(sub(text,(t-1)*chars,t*chars-1),25,37+(t-1)*7,0)
 		--print(tlog,5+pad,5+pad+1+11)
 	end
 
-	dbutton("s",99,64,true)
+	dbutton("s",99,64+xtra,true)
 end
 
 function dbutton(type,x,y,bg)
@@ -681,10 +683,15 @@ function control_battle()
 		end
 		if(btnp(🅾️) and but_pos==2) then
 			if(bltype=="potion" and #plyr.potions>0) then
-				hpv=plyr.potions[list_start+list_pos-1].val
+				lp=list_start+list_pos-1
+				hpv=plyr.potions[lp].val
+				d=plyr.potions[lp].desc
 				hpc=plyr.curr_hp+hpv
 				msg="potion heals derek for "..hpv
-				if(hpv=="full") then
+				if(d=="potion of fiery breath") then
+					--attack(plyr,e[rnd(ceil(#e))])
+					msg="potion randomly hits "
+				elseif(hpv=="full") then
 					plyr.curr_hp=plyr.hp
 				elseif(hpc <= plyr.hp) then
 					plyr.curr_hp+=hpv
@@ -693,7 +700,7 @@ function control_battle()
 				else
 					msg="potion has no effect"
 				end
-				del(plyr.potions,plyr.potions[list_start+list_pos-1])
+				del(plyr.potions,plyr.potions[lp])
 				add_log(msg)
 				for i=1,#e do
 					attack(e[i],plyr)
@@ -862,7 +869,12 @@ function wave_init()
 				fmap[r][y].type="e"
 				gbl={creature="goblin",lvl=1,spr=192,{}}
 				orc={creature="orc",lvl=1,spr=193,{}}
-				rn=rnd({gbl,gbl,{gbl,gbl},orc})
+				--rn=rnd({gbl,gbl,{gbl,gbl},orc})
+				if(wave==1) rn=rnd({gbl,gbl,{gbl,gbl},orc})
+				if(wave==2) rn=rnd({gbl,orc,{gbl,orc},orc})
+				if(wave==3) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
+				if(wave==4) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
+				if(wave==5) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
 				if(#rn==1) rn={rn}
 				fmap[r][y].mobs=rn
 				--[[rn=rnd({1,2})
