@@ -682,8 +682,8 @@ function control_battle()
 			list_min=1
 		end
 		if(btnp(🅾️) and but_pos==2) then
+			lp=list_start+list_pos-1
 			if(bltype=="potion" and #plyr.potions>0) then
-				lp=list_start+list_pos-1
 				hpv=plyr.potions[lp].val
 				d=plyr.potions[lp].desc
 				hpc=plyr.curr_hp+hpv
@@ -704,12 +704,11 @@ function control_battle()
 				end
 				del(plyr.potions,plyr.potions[lp])
 				if(log) add_log(msg)
-				for i=1,#e do
-					attack(e[i],plyr)
-				end
 			elseif(bltype=="magic") then
-				print("x")
+				r=ceil(rnd(#e))
+				spell(plyr,e[r],"derek casts "..plyr.magic[lp].desc)
 			end
+			enemy_attack()
 			blist=false
 		end
 	elseif(bmenu and blist==false) then
@@ -727,14 +726,8 @@ function control_battle()
 		end
 		if(btnp(🅾️)) then
 			if(bpos==2) then
-				--for i=1,#e do
-				--	attack(e[i],plyr)
-				--end
-				log=battle_run()
-				log4=log3
-				log3=log2
-				log2=log1
-				log1=log
+				add_log(battle_run())
+				enemy_attack()
 				bmenu=true
 			elseif(bpos==3 or bpos==4) then
 				blist=true
@@ -759,9 +752,7 @@ function control_battle()
 		elseif(btnp(🅾️)) then
 			if(bpos==1) then
 				attack(plyr,e[epos])
-				for i=1,#e do
-					attack(e[i],plyr)
-				end
+				enemy_attack()
 			end
 			bmenu=true
 		end
@@ -930,19 +921,23 @@ function wave_advance()
 
 	for x=1,15 do
 		for y=1,11 do
-			if (fmap[x][y].type=="e") then
-				if (x>10 and y>7 and nmap[x-1][y-1].type=="o") then
+			if(fmap[x][y].type=="e") then
+				if(x>10 and y>7 and nmap[x-1][y-1].type=="o") then
 					nmap[x][y].type="o"
 					nmap[x-1][y-1].type="e"
 					nmap[x-1][y-1].mobs=fmap[x][y].mobs
-				elseif (x>10 and nmap[x-1][y].type=="o") then
+				elseif(x>10 and nmap[x-1][y].type=="o") then
 					nmap[x][y].type="o"
 					nmap[x-1][y].type="e"
 					nmap[x-1][y].mobs=fmap[x][y].mobs
-				elseif (y>7 and nmap[x][y-1].type=="o") then
+				elseif(y>7 and nmap[x][y-1].type=="o") then
 					nmap[x][y].type="o"
 					nmap[x][y-1].type="e"
 					nmap[x][y-1].mobs=fmap[x][y].mobs
+				elseif(y>7 and nmap[x-1][y].type=="o") then
+						nmap[x][y].type="o"
+						nmap[x-1][y].type="e"
+						nmap[x-1][y].mobs=fmap[x][y].mobs
 				end
 			end
 		end
@@ -958,7 +953,7 @@ function wave_attack()
 			if(fmap[x][y].type=="e")then
 				for e=1,#fmap[x][y].mobs do
 					if(plyr.castle_hp-fmap[x][y].mobs[e].lvl>=0) then
-						plyr.castle_hp-=fmap[x][y].mobs[e].lvl
+						plyr.castle_hp-=fmap[x][y].mobs[e].lvl*2
 					else
 						plyr.castle_hp=0
 						plyr.dead=true
@@ -1189,8 +1184,13 @@ function attack(atk,def)
 	else
 		add_log(atk.type.." missed "..def.type)
 	end
---	return log
 	return d
+end
+
+function enemy_attack()
+	for i=1,#e do
+		attack(e[i],plyr)
+	end
 end
 
 function spell(atk,def,style)
@@ -1205,7 +1205,7 @@ function spell(atk,def,style)
 	else
 		add_log(style.." missed "..def.type)
 	end
---	return log
+
 	return d
 end
 
