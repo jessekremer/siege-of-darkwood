@@ -79,15 +79,15 @@ function _init()
 		{desc="potion of healing",gold=2,val="4",stat="potion"},
 		{desc="potion of extra healing",gold=5,val="8",stat="potion"},
 		{desc="potion of heal",gold=20,val="full",stat="potion"},
-		{desc="potion of fiery breath",gold=1,val="1",stat="potion"}
+		{desc="potion of fiery breath",gold=10,val="1",stat="potion"}
 		}
 
 	magic={
-		{desc="protection+1",gold=1,val="1",stat="ring"},
-		{desc="protection+2",gold=2,val="1",stat="ring"},
-		{desc="fire",gold=1,val="1",stat="wand"},
-		{desc="lightning",gold=3,val="1",stat="wand"},
-		{desc="destruction",gold=4,val="1",stat="wand"},
+		{desc="protection+1",gold=1000,val="1",stat="ring"},
+		{desc="protection+2",gold=2000,val="1",stat="ring"},
+		{desc="fire",gold=1000,val="1",stat="wand"},
+		{desc="lightning",gold=3000,val="1",stat="wand"},
+		{desc="destruction",gold=4000,val="1",stat="wand"},
 		{desc="healing",gold=1200,val="1",stat="staff"}--,
 		--{desc="dog",gold=777,val="5",stat="cha"}
 		}
@@ -451,7 +451,7 @@ end
 function textbox(text,s)
 	pad=20
 	chars=20
-	lines=ceil(#text/chars)
+	lines=ceil(#text/chars)+1
 	xtra=(lines-5)*7
 	rectfill(21,21,108,71+xtra,1)
 	rectfill(20,20,107,70+xtra,7)
@@ -517,7 +517,7 @@ function field()
 	end
 
 	--level up symbol
-	if(plyr.lvl>1) spr(41,spc*7+9,9)
+	if(plyr.stat_points>0) spr(41,121,16)
 
 	spr(39,1,116)
 	spr(40,9,116)
@@ -533,7 +533,7 @@ function field()
 	else
 		chp=11
 	end
-	rectfill(17,125-9*cp,21,125,chp)
+	rectfill(17,125-8*cp,21,125,chp)
 	rect(17,116,21,126,7)
 
 	rect(spc*(field_pos-1)+1,8,spc*(field_pos-1)+14,21,10)
@@ -818,7 +818,8 @@ function derek_stats()
 		if(spos==6) plyr.cha+=1
 		plyr.stat_points-=1
 	end
-	print("stat points: "..plyr.stat_points,66,70,0)
+	print("stat points:",68,14,0)
+	print(plyr.stat_points,cx2-num_size(plyr.stat_points),14,0)
 	print("weapon: "..plyr.weapon,6,70,0)
 	print("armour: "..plyr.armour,6,80,0)
 
@@ -1288,7 +1289,7 @@ end
 
 function level(xp)
 	lvl = plyr.lvl
-	xp=xp/100
+	--xp=xp/100
 	--max number in pico-8 is 32768
 	if(xp>=3 and lvl<2) lvl=2
 	if(xp>=9 and lvl<3) lvl=3
@@ -1311,8 +1312,8 @@ function level(xp)
 	if(xp>=3550 and lvl<20) lvl=20
 	if(lvl>plyr.lvl) then
 		tlog = tlog.."derek leveled up to "..tostr(lvl).."!"
-		 plyr.stat_points+=1
-		 plyr.hp+=droll(6,1)+bonus(plyr.con)
+		plyr.stat_points+=1
+		plyr.hp+=droll(6,1)+bonus(plyr.con)
 	end
 	plyr.lvl = lvl
 end
