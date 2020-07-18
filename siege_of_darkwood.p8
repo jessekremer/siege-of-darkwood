@@ -25,14 +25,14 @@ function _init()
 		dead=false,
 		init=0,
 		type="derek",
-		stat_points=10,
+		stat_points=0,
 		castle_hp=100,
 		castle_max_hp=100,
 		magic={},
 		potions={},
 		bs="c"
 		}
-
+	reset_plyr=plyr
 	save_plyr=plyr
 	save_fmap={}
 	save_wave=1
@@ -584,8 +584,10 @@ end
 function control_field()
 	select=false
 	if(btnp(⬆️)) fmenu=true
-	if(btnp(⬅️) and field_pos>1) field_pos-=1
-	if(btnp(➡️) and field_pos<field_num) field_pos+=1
+	if(btnp(⬅️) and field_pos>0) field_pos-=1
+	if(btnp(⬅️) and field_pos<1) field_pos=8
+	if(btnp(➡️) and field_pos<9) field_pos+=1
+	if(btnp(➡️) and field_pos==9) field_pos=1
 	if(btnp(🅾️)) then
 		shop=field_pos
 		gamestate=3
@@ -807,7 +809,7 @@ function derek_stats()
 	print(plyr.cha,cx2-num_size(plyr.cha),56,8)
 
 	sy=26+6*(spos-1)
-	spr(41,cx2-14,sy)
+	if(plyr.stat_points>0) spr(41,cx2-14,sy)
 
 	if (but_pos==2 and select and plyr.stat_points>0) then
 		if(spos==1) plyr.str+=1
@@ -839,13 +841,6 @@ function derek_stats()
 	button(101,110,"buy",not b)
 end
 
-function derek_items()
-	title="items"
-	map(0,0)
-	tx=centre_text(title)
-	rectfill(tx-1,1,128-tx+1,6,6)
-	print(title,tx+1,1,0)
-end
 -->8
 --waves
 function wave_init()
@@ -1289,31 +1284,30 @@ end
 
 function level(xp)
 	lvl = plyr.lvl
-	--xp=xp/100
 	--max number in pico-8 is 32768
-	if(xp>=3 and lvl<2) lvl=2
-	if(xp>=9 and lvl<3) lvl=3
-	if(xp>=27 and lvl<4) lvl=4
-	if(xp>=65 and lvl<5) lvl=5
-	if(xp>=140 and lvl<6) lvl=6
-	if(xp>=230 and lvl<7) lvl=7
-	if(xp>=340 and lvl<8) lvl=8
-	if(xp>=480 and lvl<9) lvl=9
-	if(xp>=640 and lvl<10) lvl=10
-	if(xp>=850 and lvl<11) lvl=11
-	if(xp>=1000 and lvl<12) lvl=12
-	if(xp>=1200 and lvl<13) lvl=13
-	if(xp>=1400 and lvl<14) lvl=14
-	if(xp>=1650 and lvl<15) lvl=15
-	if(xp>=1950 and lvl<16) lvl=16
-	if(xp>=2250 and lvl<17) lvl=17
-	if(xp>=2650 and lvl<18) lvl=18
-	if(xp>=3050 and lvl<19) lvl=19
-	if(xp>=3550 and lvl<20) lvl=20
+	if(xp>=30 and lvl<2) lvl=2 xp-=30
+	if(xp>=60 and lvl<3) lvl=3 xp-=60
+	if(xp>=180 and lvl<4) lvl=4 xp-=180
+	if(xp>=380 and lvl<5) lvl=5 xp-=380
+	if(xp>=750 and lvl<6) lvl=6 xp-=750
+	if(xp>=900 and lvl<7) lvl=7 xp-=900
+	if(xp>=1100 and lvl<8) lvl=8 xp-=1100
+	if(xp>=1400 and lvl<9) lvl=9 xp-=1400
+	if(xp>=1600 and lvl<10) lvl=10 xp-=1600
+	if(xp>=2100 and lvl<11) lvl=11 xp-=2100
+	if(xp>=1500 and lvl<12) lvl=12 xp-=1500
+	if(xp>=2000 and lvl<13) lvl=13 xp-=2000
+	if(xp>=2000 and lvl<14) lvl=14 xp-=2000
+	if(xp>=2500 and lvl<15) lvl=15 xp-=2500
+	if(xp>=3000 and lvl<16) lvl=16 xp-=3000
+	if(xp>=3000 and lvl<17) lvl=17 xp-=3000
+	if(xp>=4000 and lvl<18) lvl=18 xp-=4000
+	if(xp>=4000 and lvl<19) lvl=19 xp-=4000
+	if(xp>=5000 and lvl<20) lvl=20 xp-=5000
 	if(lvl>plyr.lvl) then
 		tlog = tlog.."derek leveled up to "..tostr(lvl).."!"
 		plyr.stat_points+=1
-		plyr.hp+=droll(6,1)+bonus(plyr.con)
+		plyr.hp+=droll(1,6)+bonus(plyr.con)
 	end
 	plyr.lvl = lvl
 end
@@ -1336,7 +1330,7 @@ function spawn_enemy(type,lvl)
 			ac=15,
 			type=type,
 			spr=192,
-			exp=50,
+			exp=5,
 			gold=10,
 			init=initiative(bonus(14))
 			}
@@ -1357,7 +1351,7 @@ function spawn_enemy(type,lvl)
 			ac=10,
 			type=type,
 			spr=193,
-			exp=100,
+			exp=10,
 			gold=20,
 			init=initiative(bonus(12))
 			}
@@ -1378,7 +1372,7 @@ function spawn_enemy(type,lvl)
 			ac=18,
 			type=type,
 			spr=194,
-			exp=700,
+			exp=70,
 			gold=100,
 			init=initiative(bonus(11))
 			}
@@ -1425,13 +1419,23 @@ function picobar(opts)
 end
 
 function picobar_act(act)
-	if(act=="save") save()
+	if(act=="save") save() fmenu=false
 	if(act=="load") load() fmenu=false
 	if(act=="new")then
 		gamestate=1
 		fmenu=false
 	end
-	if(act=="quit") _init()
+	if(act=="quit") reset()
+end
+
+function reset()
+	plyr=reset_plyr
+	fmap={}
+	wave=1
+	wave_init()
+	field_pos=1
+	fmenu=false
+	gamestate=0
 end
 
 function save()
