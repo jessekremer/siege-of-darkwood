@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 27
+version 29
 __lua__
 function _init()
 	plyr={
@@ -23,6 +23,7 @@ function _init()
 		weapon="hands",
 		armour="none",
 		dead=false,
+		win=false,
 		init=0,
 		type="derek",
 		stat_points=0,
@@ -45,8 +46,7 @@ function _init()
 	temple={
 		{desc="cure light wounds",gold=2,val="4",stat="hp"},
 		{desc="cure serious wounds",gold=5,val="8",stat="hp"},
-		{desc="heal",gold=20,val="full",stat="hp"},
-		{desc="identify",gold=1,val="1",stat="charge"}
+		{desc="heal",gold=20,val="full",stat="hp"}
 		}
 
 	weapons={
@@ -85,9 +85,9 @@ function _init()
 	magic={
 		{desc="protection+1",gold=1000,val="1",stat="ring"},
 		{desc="protection+2",gold=2000,val="1",stat="ring"},
-		{desc="fire",gold=1000,val="1",stat="wand"},
+		{desc="fire bolt",gold=1000,val="1",stat="wand"},
 		{desc="lightning",gold=3000,val="1",stat="wand"},
-		{desc="destruction",gold=4000,val="1",stat="wand"},
+		{desc="disintegrate",gold=4000,val="1",stat="wand"},
 		{desc="healing",gold=1200,val="1",stat="staff"}--,
 		--{desc="dog",gold=777,val="5",stat="cha"}
 		}
@@ -128,6 +128,7 @@ function _init()
 	bmenu=true
 	blist=false
 	bluse=false
+	use_magic=""
 	bltype=""
 	fpos=1
 	fmenu=false
@@ -232,6 +233,7 @@ function _draw()
 
 	if (wave_adv) wave_attack() wave_advance()
 	if (plyr.dead) gameover()
+	if (plyr.win) win()
 end
 -->8
 --menu
@@ -331,13 +333,14 @@ function menu(title,list,icon)
 	end
 	if (but_pos==2) then
 		button(101,110,"buy",true)
-		if (select and plyr.gold-list[p].gold>=0 and plyr.dmg != list[p].val) then
+		v=list[p].val
+		if (select and plyr.gold-list[p].gold>=0 and plyr.dmg != v) then
 			if (title=="weapon shop") then
-				plyr.dmg=list[p].val
-				plyr.d=tonum(sub(list[p].val,3))
+				plyr.dmg=v
+				plyr.d=tonum(sub(v,3))
 				plyr.weapon=list[p].desc
 			elseif (title=="armourer") then
-				plyr.amr_ac=list[p].val
+				plyr.amr_ac=v
 				plyr.armour=list[p].desc
 			elseif (title=="alchemist") then
 				add(plyr.potions,list[p])
@@ -357,8 +360,10 @@ function menu(title,list,icon)
 					if(flr(d/2)*2==d) plyr.gold+=3
 				end
 			elseif (title=="temple") then
-				if(plyr.curr_hp+list[p].val <= plyr.hp) then
-					plyr.curr_hp+=list[p].val
+				if(v == "full")then
+					plyr.curr_hp=plyr.hp
+				elseif(plyr.curr_hp+v <= plyr.hp) then
+					plyr.curr_hp+=v
 				else
 					plyr.curr_hp=plyr.hp
 				end
@@ -706,11 +711,13 @@ function control_battle()
 				end
 				del(plyr.potions,plyr.potions[lp])
 				if(log) add_log(msg)
+				enemy_attack()
 			elseif(bltype=="magic") then
 				r=ceil(rnd(#e))
-				spell(plyr,e[r],"derek casts "..plyr.magic[lp].desc)
+				use_magic=plyr.magic[lp].desc
+				bmenu=false
+				epos=1
 			end
-			enemy_attack()
 			blist=false
 		end
 	elseif(bmenu and blist==false) then
@@ -754,6 +761,10 @@ function control_battle()
 		elseif(btnp(🅾️)) then
 			if(bpos==1) then
 				attack(plyr,e[epos])
+				enemy_attack()
+			end
+			if(bpos==4) then
+				spell(plyr,e[epos],"spell",use_magic)
 				enemy_attack()
 			end
 			bmenu=true
@@ -844,49 +855,29 @@ end
 -->8
 --waves
 function wave_init()
-	if (wave==1) then
-		for x=1,15 do
-			fmap[x]={}
-			for y=1,11 do
-				fmap[x][y]={type="o",mobs={}}
-				if(fget(mget(x+31,y+2))==1) fmap[x][y].type="x"
-			end
-		end
+	for x=1,15 do
+		fmap[x]={}
 		for y=1,11 do
-			r=ceil(rnd(15))
-			if (fmap[r][y].type!="x") then
-				fmap[r][y].type="e"
-				gbl={creature="goblin",lvl=1,spr=192,{}}
-				orc={creature="orc",lvl=1,spr=193,{}}
-				--rn=rnd({gbl,gbl,{gbl,gbl},orc})
-				if(wave==1) rn=rnd({gbl,gbl,{gbl,gbl},orc})
-				if(wave==2) rn=rnd({gbl,orc,{gbl,orc},orc})
-				if(wave==3) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
-				if(wave==4) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
-				if(wave==5) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
-				if(#rn==1) rn={rn}
-				fmap[r][y].mobs=rn
-				--[[rn=rnd({1,2})
-				if (rn==1) then
-					fmap[r][y].mobs={{creature="goblin",lvl=1,spr=192,{}}}
-				end
-				if (rn==2) then
-					fmap[r][y].mobs={{creature="goblin",lvl=1,spr=192,{}},
-									{creature="orc",lvl=1,spr=193,{}},
-									{creature="goblin",lvl=1,spr=192,{}}
-								}
-				end]]--
-
-			end
-			save_fmap=fmap
+			fmap[x][y]={type="o",mobs={}}
+			if(fget(mget(x+31,y+2))==1) fmap[x][y].type="x"
 		end
-	elseif (wave==2) then
-		for x=1,15 do
-			fmap[x]={}
-			for y=1,11 do
-				fmap[x][y]={type="o",mobs={}}
-			end
+	end
+	for y=1,11 do
+		r=ceil(rnd(15))
+		if (fmap[r][y].type!="x") then
+			fmap[r][y].type="e"
+			gbl={creature="goblin",lvl=1,spr=192,{}}
+			orc={creature="orc",lvl=1,spr=193,{}}
+			if(wave==1) rn=rnd({gbl,gbl,{gbl,gbl},orc})
+			if(wave==2) rn=rnd({gbl,orc,{gbl,orc},orc})
+			if(wave==3) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
+			if(wave==4) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
+			if(wave==5) rn=rnd({orc,orc,{gbl,orc,gbl},{gbl,orc}})
+			if(wave==10) rn=gbl
+			if(#rn==1) rn={rn}
+			fmap[r][y].mobs=rn
 		end
+		save_fmap=fmap
 	end
 	wave_reset=false
 end
@@ -973,6 +964,7 @@ function wave_clear()
 	if (wc==0) then
 		gamestate=6
 		wave+=1
+		if(wave>10) plyr.win=true
 	end
 end
 -->8
@@ -1189,17 +1181,33 @@ function enemy_attack()
 	end
 end
 
-function spell(atk,def,style)
+function spell(atk,def,style,spell)
 	if (hit(def.ac,atk.str,0)) then
-		d=dmg(atk.d,0)
+		if(style=="spell") then
+			if(spell=="fire bolt") then
+				if(lvl>=17) then
+					d=droll(4,10)
+				elseif(lvl >= 11) then
+					d=droll(3,10)
+				elseif(lvl >= 5) then
+					d=droll(2,10)
+				else
+					d=droll(1,10)
+				end
+			end
+			if(spell=="lightning") d=droll(8,6)
+			if(spell=="disintegrate") d=droll(10,6)+40
+		else
+			d=dmg(atk.d,0)
+		end
 		if (def.curr_hp-d >= 0) then
 			def.curr_hp-=d
 		else
 			def.curr_hp=0
 		end
-		add_log(style.." hit "..def.type.." for "..tostr(d).." dmg")
+		add_log(spell.." hit "..def.type.." for "..tostr(d).." dmg")
 	else
-		add_log(style.." missed "..def.type)
+		add_log(spell.." missed "..def.type)
 	end
 
 	return d
@@ -1225,7 +1233,7 @@ function hit(ac,str,bns)
 	hit_result=false
 	dice=ceil(rnd(20))
 
-	if (dice+bns+bonus(str) > ac/2) hit_result=true
+	if (dice+bns+bonus(str) > ac) hit_result=true
 
 	return hit_result
 end
@@ -1382,6 +1390,7 @@ end
 
 function title_screen()
 	rectfill(0,8,127,127,13)
+	rectfill(26,46,102,60,1)
 	rectfill(25,45,101,59,5)
 	rect(26,46,100,58,10)
 	bprint("siege of darkwood",30,50,10,0)
@@ -1456,6 +1465,9 @@ function gameover()
 	textbox("sorry. you have been killed. the city will now surely fall into the hands of torque. please try again.",10)
 end
 
+function win()
+	textbox("congratulations. you have valiantly fought off torques horde. darkwood will be forever greatful.",42)
+end
 __gfx__
 00000000666666666666666666666666999499940000000700000000000770000000000009000000007770000000000000000000000000000000000000000000
 000000006555555555555555555555569994999400000070000cc0000077770000a8a00007777000077777000000000000000000000000000000000000000000
@@ -1473,14 +1485,14 @@ bb00033077777777555555507777777744444444444a44404494644044666440447e744044494440
 0000000077777777555555507777777794999499044a4400041494000666660004eee400044944000447e7000a100c9019aff000011111000000000000000000
 00000000777777775555555077777777444444440444440004444400044444000444440004494400044444000da00920c1a55c00011111000000000000000000
 0000000077777777000000000000000049994999004440000044400000444000004440000044400000444000d0000002c1aa5cc0001110000000000000000000
-09999800707070700000000000000000499949990000000000000000000000075000000005550000000000000000000000000000000000000000000000000000
-99080880070707070000000000000000444444440000000000000000007500755500750055b55000000000000000000000000000000000000000000000000000
-9880882070707070000000000000000099949994006666666666660007555007500755505bbb5000000000000000000000000000000000000000000000000000
-88080220070707070000000000000000999499940065555555555500007500755500750055b55000000000000000000000000000000000000000000000000000
-02222200707070700000000000000000444444440065555555555500007500755500750005550000000000000000000000000000000000000000000000000000
-00000000070707070000000000000000994999490065555555555500075555555555555000000000000000000000000000000000000000000000000000000000
-00000000707070700000000555555555994999490065555555555500075555555555555000000000000000000000000000000000000000000000000000000000
-00000000070707070000005000000000444444440065555555555500075555555555555000000000000000000000000000000000000000000000000000000000
+09999800707070700000000000000000499949990000000000000000000000075000000005550000002002000000000000000000000000000000000000000000
+99080880070707070000000000000000444444440000000000000000007500755500750055b55000028228200000000000000000000000000000000000000000
+9880882070707070000000000000000099949994006666666666660007555007500755505bbb5000288888820000000000000000000000000000000000000000
+88080220070707070000000000000000999499940065555555555500007500755500750055b55000288888820000000000000000000000000000000000000000
+02222200707070700000000000000000444444440065555555555500007500755500750005550000028888200000000000000000000000000000000000000000
+00000000070707070000000000000000994999490065555555555500075555555555555000000000028888200000000000000000000000000000000000000000
+00000000707070700000000555555555994999490065555555555500075555555555555000000000002882000000000000000000000000000000000000000000
+00000000070707070000005000000000444444440065555555555500075555555555555000000000000220000000000000000000000000000000000000000000
 00800000505050500000005000000050000000000065555555555500075555555555555000000000011000000110000000000000000000000000000000000000
 097f0000050505050000005000000005000000000065555555555500075555500755555000050000199100001881000000000000000000000000000000000000
 a777e000505050500000005000000000000000000065555555555500075555500755555000555000199100001881000000000000000000000000000000000000
